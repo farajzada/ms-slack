@@ -1,0 +1,50 @@
+version: '3.8'
+
+services:
+  ms-slack-postgres:
+    image: postgres:15
+    container_name: ms-slack-postgres
+    environment:
+      POSTGRES_DB: ms_auth_db
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+
+  ms-slack-redis:
+    image: redis:7
+    container_name: ms-slack-redis
+    ports:
+      - "6379:6379"
+
+  ms-slack-mongo:
+    image: mongo:6
+    container_name: ms-slack-mongo
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongodata:/data/db
+
+  ms-slack-auth-service:
+    build:
+      context: ./ms-auth
+    container_name: ms-slack-auth-service
+    ports:
+      - "8081:8081"
+    depends_on:
+      - ms-slack-postgres
+      - ms-slack-redis
+      - ms-slack-mongo
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://ms-slack-postgres:5432/ms_auth_db
+      SPRING_DATASOURCE_USERNAME: postgres
+      SPRING_DATASOURCE_PASSWORD: postgres
+      SPRING_REDIS_HOST: ms-slack-redis
+      SPRING_REDIS_PORT: 6379
+      SPRING_DATA_MONGODB_URI: mongodb://ms-slack-mongo:27017/ms_chat_db
+
+volumes:
+  pgdata:
+  mongodata:
